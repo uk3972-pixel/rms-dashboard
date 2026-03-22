@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RMS 検索キーワード分析ダッシュボード</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --blue:#1a56db;--blue-dk:#1342b0;--blue-lt:#e8f0fe;--blue-xl:#f0f5ff;--blue-md:#4f87f5;
+  --nb:#1a56db;--gb:#93c5fd;
+  --white:#fff;--bg:#f4f7fc;--surf:#fff;--bdr:#dde6f5;
+  --txt:#0d1b3e;--tm:#3a4d6b;--ts:#6b7e99;--tu:#9aaabf;
+  --green:#0a7c4e;--gbg:#e6f9f1;--red:#c0392b;--rbg:#fdf0ef;--navy:#0a1f5c;
+}
+body{background:var(--bg);font-family:'ヒラギノ角ゴ ProN W3','Hiragino Kaku Gothic ProN','ヒラギノ角ゴシック','Hiragino Sans','Yu Gothic Medium','YuGothic',sans-serif;color:var(--txt);font-size:13px;}
+button{cursor:pointer;font-family:inherit;font-size:13px;}
+input{font-family:inherit;font-size:13px;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:#c5d3e8;border-radius:3px;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.fi{animation:fi .25s ease;}
+/* layout */
+.wrap{max-width:1160px;margin:0 auto;padding:28px 24px 60px;}
+/* header */
+.hdr{background:var(--white);border-bottom:2px solid var(--blue);padding:0 32px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(26,86,219,.08);}
+.hdr-inner{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px;}
+.hdr-title{display:flex;align-items:center;gap:10px;}
+.hdr-bar{width:4px;height:24px;background:var(--blue);border-radius:2px;}
+.hdr-name{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:16px;font-weight:700;color:var(--txt);letter-spacing:.04em;}
+.hdr-sub{font-size:11px;color:var(--tu);}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;}
+.status-dot{width:8px;height:8px;border-radius:50%;}
+/* section header */
+.sec-hdr{display:flex;align-items:center;margin-bottom:20px;}
+.sec-hdr-label{background:var(--blue);color:#fff;padding:7px 28px 7px 16px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 100%,0 100%);font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;white-space:nowrap;}
+/* section title */
+.sec-ttl{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.sec-ttl-bar{width:4px;height:20px;background:var(--blue);border-radius:2px;flex-shrink:0;}
+.sec-ttl-text{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:15px;font-weight:700;color:var(--txt);letter-spacing:.03em;}
+/* card */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;padding:20px 24px;}
+/* settings grid */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+/* upload zone */
+.upload-zone{background:var(--white);border:2px dashed var(--bdr);border-radius:10px;padding:18px 22px;cursor:pointer;display:flex;align-items:center;gap:16px;transition:all .2s;}
+.upload-zone:hover,.upload-zone.drag{background:var(--blue-xl)!important;border-color:var(--blue)!important;}
+.upload-icon{width:44px;height:44px;border-radius:8px;background:var(--blue-xl);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+/* period filter */
+.period-wrap{display:flex;gap:6px;align-items:center;margin-bottom:24px;margin-top:8px;flex-wrap:wrap;}
+.period-lbl{font-size:11px;color:var(--ts);margin-right:4px;font-weight:600;letter-spacing:.05em;}
+.period-btn{padding:5px 14px;border-radius:4px;font-size:12px;border:1px solid var(--bdr);background:var(--white);color:var(--tm);transition:all .15s;}
+.period-btn:hover:not(.active){background:var(--blue-xl);border-color:#a5b4fc;}
+.period-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700;}
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+.kpi-card{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;transition:box-shadow .15s;}
+.kpi-card:hover{box-shadow:0 4px 16px rgba(26,86,219,.1);}
+.kpi-top{position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-label{font-size:11px;font-weight:600;color:var(--ts);letter-spacing:.06em;margin-bottom:6px;}
+.kpi-value{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:24px;font-weight:700;color:var(--txt);letter-spacing:-.02em;line-height:1.2;}
+.kpi-sub{font-size:12px;color:var(--ts);margin-top:4px;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;}
+.badge.up{background:var(--gbg);color:var(--green);}
+.badge.dn{background:var(--rbg);color:var(--red);}
+.badge-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.badge-lbl{font-size:10px;color:var(--tu);margin-right:1px;align-self:center;}
+.badge-row-group{display:flex;align-items:center;gap:3px;}
+/* tabs */
+.tab-bar{display:flex;border-bottom:2px solid var(--bdr);margin-bottom:22px;}
+.tab-btn{padding:10px 22px;border:none;font-size:13px;background:transparent;color:var(--ts);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s;}
+.tab-btn:hover{color:var(--blue);}
+.tab-btn.active{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-weight:700;color:var(--blue);border-bottom-color:var(--blue);}
+/* overview layout */
+.ov-top{display:grid;grid-template-columns:360px 1fr;gap:16px;margin-bottom:24px;}
+/* ratio bar */
+.ratio-row{margin-bottom:18px;}
+.ratio-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.ratio-month{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:13px;font-weight:700;color:var(--txt);}
+.ratio-total{font-size:12px;color:var(--ts);}
+.ratio-bar-wrap{display:flex;height:28px;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px var(--bdr);}
+.ratio-named{background:var(--nb);display:flex;align-items:center;justify-content:center;transition:width .6s ease;}
+.ratio-general{flex:1;background:var(--gb);display:flex;align-items:center;justify-content:center;}
+.ratio-pct{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:11px;font-weight:700;color:#fff;}
+.ratio-pct-g{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-size:11px;font-weight:700;color:var(--blue-dk);}
+.ratio-foot{display:flex;justify-content:space-between;margin-top:5px;}
+.ratio-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tm);}
+.dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+/* legend */
+.legend{display:flex;gap:14px;margin-bottom:18px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tm);}
+.leg-dot{width:10px;height:10px;border-radius:2px;}
+/* SVG chart */
+.chart-wrap{width:100%;overflow-x:auto;}
+/* table */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--blue-xl);}
+th{padding:10px 14px;text-align:left;font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-weight:700;font-size:11px;color:var(--tm);letter-spacing:.04em;border-bottom:2px solid var(--bdr);white-space:nowrap;}
+th.r{text-align:right;}
+td{padding:11px 14px;border-bottom:1px solid var(--bdr);}
+td.r{text-align:right;}
+tbody tr:nth-child(even){background:var(--bg);}
+tbody tr:hover{background:#eef3fc!important;}
+.fb{font-family:'ヒラギノ角ゴ ProN W6','Hiragino Kaku Gothic ProN W6','ヒラギノ角ゴシック W6','Hiragino Sans W6','Yu Gothic','YuGothic',sans-serif;font-weight:700;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+.tag-named{background:var(--blue-lt);color:var(--blue);}
+.tag-general{background:#e0f2fe;color:#0369a1;}
+.tag-pct{background:var(--blue-lt);color:var(--blue);}
+.tag-new{background:#fef9c3;color:#854d0e;}
+.tag-gone{background:var(--rbg);color:var(--red);}
+.share-bar-wrap{display:flex;align-items:center;gap:8px;}
+.share-bar-bg{flex:1;height:6px;background:var(--bdr);border-radius:99px;overflow:hidden;}
+.share-bar-fill{height:100%;border-radius:99px;}
+.share-pct{font-size:11px;color:var(--ts);min-width:38px;text-align:right;}
+/* info banner */
+.banner{border-radius:6px;padding:9px 14px;margin-bottom:12px;font-size:12px;display:flex;gap:6px;flex-wrap:wrap;}
+.banner.ok{background:var(--gbg);border:1px solid #a7f3d0;color:var(--green);}
+.banner.er{background:var(--rbg);border:1px solid #fca5a5;color:var(--red);}
+/* kw legend */
+.kw-leg{display:flex;gap:20px;margin-bottom:14px;padding:8px 12px;background:var(--blue-xl);border-radius:6px;font-size:12px;color:var(--tm);flex-wrap:wrap;}
+/* footer */
+.footer{border-top:1px solid var(--bdr);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;background:var(--white);font-size:11px;color:var(--tu);}
+/* alert info */
+.mom-note{font-size:11px;color:var(--ts);margin-bottom:10px;margin-top:-10px;}
+/* tooltip svg */
+.chart-tooltip{pointer-events:none;}
+/* kw split table */
+/* kw-split は統合テーブルに変更済み */
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-title">
+      <div class="hdr-bar"></div>
+      <span class="hdr-name">検索キーワード分析ダッシュボード</span>
+      <span class="hdr-sub">RMS 指名 / 一般 分析ツール</span>
+    </div>
+    <div class="hdr-status">
+      <div class="status-dot" id="statusDot" style="background:var(--tu)"></div>
+      <span id="statusText" style="color:var(--tu)">サンプルデータ表示中</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Settings -->
+  <div class="sec-hdr"><span class="sec-hdr-label">SETTINGS</span></div>
+  <div class="settings-grid">
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">📁</div>
+      <div>
+        <div style="font-size:12px;color:var(--ts);line-height:2.2">
+          楽天RMS &gt; データ分析 &gt; 参照元・検索キーワード &gt; 表をコピー &gt; CSV貼り付け
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept=".csv" multiple style="display:none">
+    </div>
+    <div class="card">
+      <div class="fb" style="font-size:13px;color:var(--txt);margin-bottom:8px">🏷️ 指名キーワード設定</div>
+      <input type="text" id="kwInput" value="" placeholder="例: ブランド名, brand, ブランド英語表記">
+      <div id="kwCount" style="font-size:11px;color:var(--tu);margin-top:6px">カンマ区切り・部分一致で判定 ／ 現在 0語 設定中</div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div id="alertOk" style="display:none" class="banner ok fi"></div>
+  <div id="alertErr" style="display:none" class="banner er fi"></div>
+
+  <!-- Period filter -->
+  <div class="period-wrap" id="periodWrap">
+    <span class="period-lbl">表示期間</span>
+    <button class="period-btn active" data-month="all">全期間</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="sec-hdr"><span class="sec-hdr-label">KPI サマリー</span></div>
+  <div id="momNote" class="mom-note" style="display:none"></div>
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card"><div class="kpi-top" style="background:var(--navy)"></div><div class="kpi-label">合計アクセス人数</div><div class="kpi-value" id="k0">—</div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:var(--nb)"></div><div class="kpi-label">指名キーワード</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s"></div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:var(--blue-md)"></div><div class="kpi-label">一般キーワード</div><div class="kpi-value" id="k2">—</div><div class="kpi-sub" id="k2s"></div></div>
+    <div class="kpi-card"><div class="kpi-top" style="background:var(--blue)"></div><div class="kpi-label">指名率</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" style="color:var(--ts);font-size:12px">指名 ÷（指名 + 一般）</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview">概要・グラフ</button>
+    <button class="tab-btn" data-tab="keywords">キーワード詳細</button>
+  </div>
+
+  <!-- Overview tab -->
+  <div id="tabOverview" class="fi">
+    <div class="ov-top">
+      <div class="card">
+        <div class="sec-ttl"><div class="sec-ttl-bar"></div><span class="sec-ttl-text">月別 指名 / 一般 割合</span></div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--nb)"></div>指名</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--gb)"></div>一般</div>
+        </div>
+        <div id="ratioBars"></div>
+      </div>
+      <div class="card" style="min-width:0">
+        <div class="sec-ttl"><div class="sec-ttl-bar"></div><span class="sec-ttl-text">月別 アクセス人数推移</span></div>
+        <div class="chart-wrap" id="chartWrap"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div class="sec-ttl" style="margin-bottom:0"><div class="sec-ttl-bar"></div><span class="sec-ttl-text">サマリーテーブル</span></div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--tu);font-weight:600;letter-spacing:.04em;margin-right:2px">対象月</span>
+          <div id="summaryMonthBtns" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+      <div id="summaryNote" style="font-size:11px;color:var(--tu);margin-bottom:12px"></div>
+      <div class="tbl-wrap">
+        <table id="summaryTable">
+          <thead><tr id="summaryThead"></tr></thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keywords tab -->
+  <div id="tabKeywords" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div class="sec-ttl"><div class="sec-ttl-bar"></div><span class="sec-ttl-text">キーワード別アクセス詳細</span></div>
+        <div id="kwHeader" style="font-size:12px;color:var(--ts);padding-top:2px"></div>
+      </div>
+      <div id="kwLegend" style="display:none" class="kw-leg"></div>
+      <div class="tbl-wrap">
+        <table id="kwTable">
+          <thead><tr id="kwThead"></tr></thead>
+          <tbody id="kwBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <span>対応形式: RMS形式（Shift-JIS 横並び）／ 標準CSV（UTF-8 ヘッダー付き）</span>
+  <span>RMS 検索キーワード分析 ／ 指名・一般キーワード分類ツール</span>
+</div>
+
+<script>
+'use strict';
+
+/* ── Dummy data ──────────────────────────────────────────────────────────── */
+/* ── State ───────────────────────────────────────────────────────────────── */
+var state={
+  raw:[],
+  kwInput:"",
+  selMonth:"all",
+  summaryMonth:"latest", // サマリーテーブル用の独立した月選択
+  activeTab:"overview"
+};
+
+/* ── Utils ───────────────────────────────────────────────────────────────── */
+function parseAc(v){if(typeof v==="number")return v;return parseInt(String(v).replace(/,/g,""),10)||0;}
+function isNamed(kw,list){return list.some(function(n){return n&&kw.includes(n);});}
+function fmt(n){return n.toLocaleString("ja-JP");}
+function pct(a,b){return b===0?"0.0":((a/b)*100).toFixed(1);}
+function getKwList(){return state.kwInput.split(/[,、]/).map(function(s){return s.trim();}).filter(Boolean);}
+
+// 月文字列の正規化: 様々な形式 → "YYYY-MM"
+// 対応形式: "2026/02/01", "2026-02-01", "2026/02", "2026-02", "202602", "202602参照元" など
+function normalizeMonth(raw){
+  if(!raw)return"";
+  // シングルクォート・ダブルクォート除去
+  var s=String(raw).trim().replace(/^['"]+|['"]+$/g,"");
+  // "2026/02/01" or "2026/2/1"(ゼロ埋めなし) or "2026-02-01"
+  var m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-]\d{1,2}/);
+  if(m)return m[1]+"-"+(m[2].length===1?"0"+m[2]:m[2]);
+  // "2026/02" or "2026/2" or "2026-02"
+  m=s.match(/^(\d{4})[\/\-](\d{1,2})$/);
+  if(m)return m[1]+"-"+(m[2].length===1?"0"+m[2]:m[2]);
+  // "202602" (6桁) or "202602参照元"
+  m=s.match(/^(\d{4})(\d{2})/);
+  if(m)return m[1]+"-"+m[2];
+  // already "YYYY-MM"
+  if(/^\d{4}-\d{2}$/.test(s))return s;
+  return s;
+}
+
+function classify(rows,list){
+  return rows.map(function(r){return{month:r.month,keyword:r.keyword,access:parseAc(r.access),type:isNamed(r.keyword,list)?"指名":"一般"};});
+}
+function getMonths(rows){return[...new Set(rows.map(function(r){return r.month;}))].sort();}
+function byMonth(rows){
+  var map={};
+  rows.forEach(function(r){
+    if(!map[r.month])map[r.month]={month:r.month,named:0,general:0};
+    r.type==="指名"?map[r.month].named+=r.access:map[r.month].general+=r.access;
+  });
+  return Object.values(map).sort(function(a,b){return a.month.localeCompare(b.month);});
+}
+function calcDiff(c,p){
+  if(p==null)return null;
+  var d=c-p;
+  return{value:d,pct:pct(Math.abs(d),p),sign:d>=0?"+":"−",pos:d>=0};
+}
+function getYoyMonth(month){
+  var m=month.match(/^(\d{4})-(\d{2})$/);
+  if(!m)return null;
+  return(parseInt(m[1])-1)+"-"+m[2];
+}
+function badgeHtml(b){
+  if(!b)return"";
+  return'<span class="badge '+(b.pos?"up":"dn")+'">'+(b.pos?"▲":"▼")+" "+b.text+"</span>";
+}
+function diffText(d){
+  if(!d)return'<span style="color:var(--tu)">—</span>';
+  var col=d.pos?"var(--green)":"var(--red)";
+  return'<span style="font-size:12px;font-weight:600;color:'+col+'">'+d.sign+d.pct+"% ("+d.sign+fmt(Math.abs(d.value))+")</span>";
+}
+
+/* ── CSV parsers ─────────────────────────────────────────────────────────── */
+function splitLine(line){
+  var r=[],cur="",q=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(ch==='"')q=!q;
+    else if(ch===","&&!q){r.push(cur.trim());cur="";}
+    else cur+=ch;
+  }
+  r.push(cur.trim());return r;
+}
+function parseRms(text){
+  var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(lines.length<2)return null;
+  var hdr=splitLine(lines[0]),secs=[];
+  hdr.forEach(function(col,idx){
+    if(col.includes("キーワード")){
+      var raw=col.replace(/キーワード.*/,"").trim();
+      var month=normalizeMonth(raw)||raw;
+      secs.push({month:month,kc:idx+1,ac:idx+2});
+    }
+  });
+  if(!secs.length)return null;
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    var cols=splitLine(lines[i]);
+    secs.forEach(function(s){
+      var kw=(cols[s.kc]||"").trim();
+      if(!kw||kw==="表示"||kw==="-"||/^\d+$/.test(kw))return;
+      var ac=parseAc((cols[s.ac]||"").trim());
+      if(ac<=0)return;
+      rows.push({month:s.month,keyword:kw,access:ac});
+    });
+  }
+  return rows.length?rows:null;
+}
+
+function parseStd(text){
+  var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(lines.length<2)return null;
+
+  // シングルクォートを除去してヘッダーを正規化
+  var hdr=splitLine(lines[0]).map(function(h){return h.trim().replace(/^['"]+|['"]+$/g,"");});
+
+  // 月列: 日付・月・month など
+  var mi=hdr.findIndex(function(h){return["日付","月","date","Date","month","Month"].includes(h);});
+  // キーワード列
+  var ki=hdr.findIndex(function(h){return["検索キーワード","keyword","Keyword","キーワード"].includes(h);});
+  // アクセス人数列
+  var ai=hdr.findIndex(function(h){return["アクセス人数","access","Access","人数"].includes(h);});
+
+  // A列（col 0）が日付形式かどうか自動検出（ヘッダーに月列名がない場合）
+  if(mi<0){
+    var firstDataCell=(splitLine(lines[1]||"")[0]||"").trim().replace(/^['"]+|['"]+$/g,"");
+    if(/^\d{4}[\/\-]\d{1,2}/.test(firstDataCell)||/^\d{6}/.test(firstDataCell)){
+      mi=0;
+    }
+  }
+
+  if(ki<0||ai<0)return null;
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    // 各セルのシングルクォートを除去
+    var cols=splitLine(lines[i]).map(function(c){return c.trim().replace(/^['"]+|['"]+$/g,"");});
+    var kw=cols[ki]||"";if(!kw)continue;
+    var rawMonth=mi>=0?(cols[mi]||""):"";
+    var access=cols[ai]||"";
+    rows.push({month:normalizeMonth(rawMonth),keyword:kw,access:access});
+  }
+  return rows.length?rows:null;
+}
+function readAs(file,enc){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onload=function(ev){res(ev.target.result);};
+    r.onerror=rej;
+    r.readAsText(file,enc);
+  });
+}
+async function parseFile(file){
+  for(var enc of["Shift-JIS","UTF-8"]){
+    var text=await readAs(file,enc);
+    var isRms=/\d{6}キーワード/.test(text)||/\d{6}参照元/.test(text);
+    if(isRms){var rr=parseRms(text);if(rr&&rr.length)return{rows:rr,fmt:"RMS形式("+enc+")",months:[...new Set(rr.map(function(r){return r.month;}))].sort()};}
+    var rs=parseStd(text);if(rs&&rs.length)return{rows:rs,fmt:"標準形式("+enc+")",months:[...new Set(rs.map(function(r){return r.month;}))].sort()};
+  }
+  return null;
+}
+
+/* ── SVG Stacked Bar Chart with interactive tooltip ─────────────────────── */
+function renderChart(mData){
+  var wrap=document.getElementById("chartWrap");
+  if(!mData.length){wrap.innerHTML='<div style="color:var(--tu);text-align:center;padding:40px;font-size:13px">データなし</div>';return;}
+  var W=wrap.offsetWidth||700,H=300;
+  var PL=54,PR=16,PT=24,PB=36;
+  var cw=W-PL-PR,ch=H-PT-PB;
+  var maxVal=Math.max.apply(null,mData.map(function(d){return d.named+d.general;}))||1;
+  var mag=Math.pow(10,Math.floor(Math.log10(maxVal)));
+  var nice=Math.ceil(maxVal/mag)*mag;
+  var ticks=4;
+  var colW=cw/mData.length;
+  var barW=Math.max(10,Math.min(60,Math.floor(colW*0.55)));
+
+  var svgParts=['<svg id="barChart" width="100%" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block">'];
+
+  // grid + y labels
+  for(var i=0;i<=ticks;i++){
+    var val=Math.round(nice*i/ticks);
+    var y=PT+ch-ch*(val/nice);
+    svgParts.push('<line x1="'+PL+'" x2="'+(PL+cw)+'" y1="'+y+'" y2="'+y+'" stroke="#dde6f5" stroke-dasharray="3,3"/>');
+    var lbl=val>=1000?(val/1000).toFixed(0)+"k":String(val);
+    svgParts.push('<text x="'+(PL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#6b7e99">'+lbl+'</text>');
+  }
+  // x axis
+  svgParts.push('<line x1="'+PL+'" x2="'+(PL+cw)+'" y1="'+(PT+ch)+'" y2="'+(PT+ch)+'" stroke="#dde6f5"/>');
+
+  // bars
+  mData.forEach(function(d,i){
+    var x=PL+i*colW+(colW-barW)/2;
+    var tot=d.named+d.general;
+    var namedH=ch*(d.named/nice);
+    var genH=ch*(d.general/nice);
+    var namedY=PT+ch-namedH-genH;
+    var genY=PT+ch-genH;
+    var lx=PL+i*colW+colW/2;
+    // named bar
+    svgParts.push('<rect class="bar-named" data-idx="'+i+'" x="'+x+'" y="'+namedY+'" width="'+barW+'" height="'+Math.max(0,namedH)+'" fill="#1a56db" rx="2" style="cursor:pointer;transition:opacity .15s"/>');
+    // named segment label (inside bar, white text)
+    if(namedH>18){
+      svgParts.push('<text class="bar-named" data-idx="'+i+'" x="'+(x+barW/2)+'" y="'+(namedY+namedH/2+4)+'" text-anchor="middle" font-size="10" font-weight="600" fill="white" style="pointer-events:none">'+fmt(d.named)+'</text>');
+    }
+    // general bar
+    svgParts.push('<rect class="bar-general" data-idx="'+i+'" x="'+x+'" y="'+genY+'" width="'+barW+'" height="'+Math.max(0,genH)+'" fill="#93c5fd" rx="'+(genH>6?2:0)+'" style="cursor:pointer;transition:opacity .15s"/>');
+    // general segment label (inside bar, dark text)
+    if(genH>18){
+      svgParts.push('<text class="bar-general" data-idx="'+i+'" x="'+(x+barW/2)+'" y="'+(genY+genH/2+4)+'" text-anchor="middle" font-size="10" font-weight="600" fill="#1342b0" style="pointer-events:none">'+fmt(d.general)+'</text>');
+    }    // x label
+    svgParts.push('<text x="'+lx+'" y="'+(H-PB+16)+'" text-anchor="middle" font-size="10" fill="#6b7e99">'+d.month+'</text>');
+    // data label on top of bar
+    if(tot>0){
+      var topLbl=tot>=1000?(tot/1000).toFixed(1)+"k":fmt(tot);
+      svgParts.push('<text class="bar-top-lbl" data-idx="'+i+'" x="'+lx+'" y="'+(namedY-6)+'" text-anchor="middle" font-size="10" font-weight="600" fill="#3a4d6b">'+topLbl+'</text>');
+    }
+    // invisible hover overlay for entire bar column
+    svgParts.push('<rect class="bar-hover" data-idx="'+i+'" data-month="'+d.month+'" data-named="'+d.named+'" data-general="'+d.general+'" data-tot="'+tot+'" x="'+(PL+i*colW)+'" y="'+PT+'" width="'+colW+'" height="'+ch+'" fill="transparent" style="cursor:pointer"/>');
+  });
+
+  svgParts.push('</svg>');
+
+  // tooltip div
+  svgParts.push('<div id="chartTooltip" style="display:none;position:absolute;background:white;border:1px solid #dde6f5;border-radius:8px;padding:10px 14px;font-size:12px;color:#0d1b3e;box-shadow:0 4px 12px rgba(0,0,0,.08);pointer-events:none;z-index:10;white-space:nowrap;min-width:140px"></div>');
+
+  // legend
+  svgParts.push('<div style="display:flex;gap:16px;justify-content:center;margin-top:8px">');
+  svgParts.push('<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#1a56db"></div><span style="font-size:12px;color:var(--tm)">指名</span></div>');
+  svgParts.push('<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#93c5fd"></div><span style="font-size:12px;color:var(--tm)">一般</span></div>');
+  svgParts.push('</div>');
+
+  wrap.style.position="relative";
+  wrap.innerHTML=svgParts.join("");
+
+  // attach hover events after DOM is set
+  var tip=document.getElementById("chartTooltip");
+  var svg=document.getElementById("barChart");
+  wrap.querySelectorAll(".bar-hover").forEach(function(rect){
+    rect.addEventListener("mousemove",function(e){
+      var month=this.dataset.month;
+      var named=parseInt(this.dataset.named);
+      var general=parseInt(this.dataset.general);
+      var tot=parseInt(this.dataset.tot);
+      var np=tot>0?((named/tot)*100).toFixed(1):0;
+      tip.innerHTML=
+        '<div style="font-weight:700;color:#0d1b3e;margin-bottom:6px">'+month+'</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="width:8px;height:8px;border-radius:2px;background:#1a56db;flex-shrink:0"></div>指名: <strong>'+fmt(named)+'人</strong></div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="width:8px;height:8px;border-radius:2px;background:#93c5fd;flex-shrink:0"></div>一般: <strong>'+fmt(general)+'人</strong></div>'+
+        '<div style="border-top:1px solid #eaeff6;margin-top:5px;padding-top:5px;color:#6b7e99">合計: <strong style="color:#0d1b3e">'+fmt(tot)+'人</strong> ／ 指名率 <strong style="color:#1a56db">'+np+'%</strong></div>';
+      // position tooltip
+      var wRect=wrap.getBoundingClientRect();
+      var mx=e.clientX-wRect.left+12;
+      var my=e.clientY-wRect.top-10;
+      // keep in bounds
+      tip.style.display="block";
+      var tw=tip.offsetWidth;
+      if(mx+tw>wrap.offsetWidth-8)mx=mx-tw-24;
+      tip.style.left=mx+"px";
+      tip.style.top=my+"px";
+      // dim other bars
+      wrap.querySelectorAll(".bar-named,.bar-general,.bar-top-lbl").forEach(function(el){el.style.opacity=el.dataset.idx===rect.dataset.idx?"1":"0.35";});
+    });
+    rect.addEventListener("mouseleave",function(){
+      tip.style.display="none";
+      wrap.querySelectorAll(".bar-named,.bar-general,.bar-top-lbl").forEach(function(el){el.style.opacity="1";});
+    });
+  });
+}
+
+/* ── Render functions ────────────────────────────────────────────────────── */
+function renderPeriodButtons(months){
+  var wrap=document.getElementById("periodWrap");
+  var all=months;
+  var html='<span class="period-lbl">表示期間</span>';
+  ["all"].concat(all).forEach(function(m){
+    var act=state.selMonth===m;
+    html+='<button class="period-btn'+(act?" active":"")+'" data-month="'+m+'">'+(m==="all"?"全期間":m)+'</button>';
+  });
+  wrap.innerHTML=html;
+  wrap.querySelectorAll(".period-btn").forEach(function(btn){
+    btn.addEventListener("click",function(){state.selMonth=btn.dataset.month;renderAll();});
+  });
+}
+
+function renderKPIs(classified,selMonth,allMonths){
+  var filt=selMonth==="all"?classified:classified.filter(function(r){return r.month===selMonth;});
+  var nt=filt.filter(function(r){return r.type==="指名";}).reduce(function(s,r){return s+r.access;},0);
+  var gt=filt.filter(function(r){return r.type==="一般";}).reduce(function(s,r){return s+r.access;},0);
+  var total=nt+gt;
+  var namedPct=pct(nt,total);
+
+  // MoM
+  var m=byMonth(classified);
+  var mom=null;
+  if(m.length>=2){
+    var c,p;
+    if(selMonth==="all"){c=m[m.length-1];p=m[m.length-2];}
+    else{var idx=m.findIndex(function(r){return r.month===selMonth;});if(idx>=1){c=m[idx];p=m[idx-1];}}
+    if(c&&p){
+      var ct=c.named+c.general,pt=p.named+p.general;
+      var cr=ct>0?(c.named/ct)*100:0,pr=pt>0?(p.named/pt)*100:0,rd=cr-pr;
+      mom={nd:calcDiff(c.named,p.named),gd:calcDiff(c.general,p.general),td:calcDiff(ct,pt),
+        rd:{pct:Math.abs(rd).toFixed(1),sign:rd>=0?"+":"−",pos:rd>=0},prevM:p.month};
+    }
+  }
+
+  // YoY: find same month last year
+  var yoy=null;
+  var currM=selMonth==="all"?allMonths[allMonths.length-1]:selMonth;
+  if(currM){
+    var yoyM=getYoyMonth(currM);
+    var yoyRow=yoyM?m.find(function(r){return r.month===yoyM;}):null;
+    var currRow=m.find(function(r){return r.month===currM;});
+    if(yoyRow&&currRow){
+      var yct=currRow.named+currRow.general,ypt=yoyRow.named+yoyRow.general;
+      var ycr=yct>0?(currRow.named/yct)*100:0,ypr=ypt>0?(yoyRow.named/ypt)*100:0,yrd=ycr-ypr;
+      yoy={nd:calcDiff(currRow.named,yoyRow.named),gd:calcDiff(currRow.general,yoyRow.general),
+        td:calcDiff(yct,ypt),
+        rd:{pct:Math.abs(yrd).toFixed(1),sign:yrd>=0?"+":"−",pos:yrd>=0},yoyM:yoyM};
+    }
+  }
+
+  document.getElementById("k0").textContent=fmt(total)+"人";
+  document.getElementById("k1").textContent=fmt(nt)+"人";
+  document.getElementById("k1s").textContent="全体の "+namedPct+"%";
+  document.getElementById("k2").textContent=fmt(gt)+"人";
+  document.getElementById("k2s").textContent="全体の "+pct(gt,total)+"%";
+  document.getElementById("k3").textContent=namedPct+"%";
+
+  // Clear old badge rows
+  document.querySelectorAll(".kpi-card .badge-row").forEach(function(el){el.remove();});
+
+  function addBadges(cardIdx,momB,yoyB){
+    if(!momB&&!yoyB)return;
+    var card=document.querySelectorAll(".kpi-card")[cardIdx];
+    var row=document.createElement("div");
+    row.className="badge-row";
+    if(momB){
+      row.innerHTML+='<div class="badge-row-group"><span class="badge-lbl">前月比</span><span class="badge '+(momB.pos?"up":"dn")+'">'+(momB.pos?"▲":"▼")+" "+momB.text+"</span></div>";
+    }
+    if(yoyB){
+      row.innerHTML+='<div class="badge-row-group"><span class="badge-lbl">昨年比</span><span class="badge '+(yoyB.pos?"up":"dn")+'">'+(yoyB.pos?"▲":"▼")+" "+yoyB.text+"</span></div>";
+    }
+    card.appendChild(row);
+  }
+
+  var noteEl=document.getElementById("momNote");
+  var notes=[];
+  if(mom)notes.push("前月比 = "+mom.prevM);
+  if(yoy)notes.push("昨年比 = "+yoy.yoyM);
+  if(notes.length){noteEl.style.display="";noteEl.textContent="※ "+notes.join("　");}
+  else noteEl.style.display="none";
+
+  addBadges(0,
+    mom&&mom.td?{pos:mom.td.pos,text:mom.td.sign+mom.td.pct+"%"}:null,
+    yoy&&yoy.td?{pos:yoy.td.pos,text:yoy.td.sign+yoy.td.pct+"%"}:null
+  );
+  addBadges(1,
+    mom&&mom.nd?{pos:mom.nd.pos,text:mom.nd.sign+mom.nd.pct+"%"}:null,
+    yoy&&yoy.nd?{pos:yoy.nd.pos,text:yoy.nd.sign+yoy.nd.pct+"%"}:null
+  );
+  addBadges(2,
+    mom&&mom.gd?{pos:mom.gd.pos,text:mom.gd.sign+mom.gd.pct+"%"}:null,
+    yoy&&yoy.gd?{pos:yoy.gd.pos,text:yoy.gd.sign+yoy.gd.pct+"%"}:null
+  );
+  addBadges(3,
+    mom&&mom.rd?{pos:mom.rd.pos,text:mom.rd.sign+mom.rd.pct+"pt"}:null,
+    yoy&&yoy.rd?{pos:yoy.rd.pos,text:yoy.rd.sign+yoy.rd.pct+"pt"}:null
+  );
+}
+
+function renderRatioBars(mData){
+  var el=document.getElementById("ratioBars");
+  if(!mData.length){el.innerHTML='<div style="color:var(--tu);text-align:center;padding:24px;font-size:13px">データなし</div>';return;}
+  var html="";
+  mData.forEach(function(row){
+    var tot=row.named+row.general;
+    var np=tot>0?(row.named/tot)*100:0,gp=100-np;
+    html+='<div class="ratio-row">';
+    html+='<div class="ratio-head"><span class="ratio-month">'+row.month+'</span><span class="ratio-total">合計 '+fmt(tot)+'人</span></div>';
+    html+='<div class="ratio-bar-wrap">';
+    html+='<div class="ratio-named" style="width:'+np+'%">'+(np>12?'<span class="ratio-pct">'+np.toFixed(1)+'%</span>':"")+'</div>';
+    html+='<div class="ratio-general">'+(gp>12?'<span class="ratio-pct-g">'+gp.toFixed(1)+'%</span>':"")+'</div>';
+    html+='</div>';
+    html+='<div class="ratio-foot">';
+    html+='<div class="ratio-item"><div class="dot" style="background:var(--nb)"></div>指名: '+fmt(row.named)+'人</div>';
+    html+='<div class="ratio-item"><div class="dot" style="background:var(--gb)"></div>一般: '+fmt(row.general)+'人</div>';
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderSummaryMonthBtns(allMonths){
+  var el=document.getElementById("summaryMonthBtns");
+  if(!el)return;
+  // "最新月" ボタン + 各月ボタン
+  var months=["latest"].concat(allMonths);
+  el.innerHTML=months.map(function(m){
+    var act=state.summaryMonth===m;
+    return'<button class="smth-btn'+(act?" active":"")+'" data-m="'+m+'" style="padding:4px 11px;border-radius:4px;font-size:11px;border:1px solid '+(act?"var(--blue)":"var(--bdr)")+';background:'+(act?"var(--blue)":"var(--white)")+';color:'+(act?"#fff":"var(--tm)")+';cursor:pointer;transition:all .15s;font-family:inherit">'+(m==="latest"?"最新月":m)+'</button>';
+  }).join("");
+  el.querySelectorAll(".smth-btn").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      state.summaryMonth=btn.dataset.m;
+      var kwList=getKwList();
+      var classified=classify(state.raw,kwList);
+      renderSummaryMonthBtns(allMonths);
+      renderSummaryTable(classified,allMonths);
+    });
+  });
+}
+
+function renderSummaryTable(classified,allMonths){
+  var mData=byMonth(classified);
+
+  // summaryMonth から今月を決定
+  var currM;
+  if(state.summaryMonth==="latest"){
+    currM=allMonths.length?allMonths[allMonths.length-1]:null;
+  }else{
+    currM=allMonths.includes(state.summaryMonth)?state.summaryMonth:null;
+  }
+
+  var prevM=null,yoyM=null;
+  if(currM){
+    var ci=allMonths.indexOf(currM);
+    if(ci>=1)prevM=allMonths[ci-1];
+    yoyM=getYoyMonth(currM);
+    if(!allMonths.includes(yoyM))yoyM=null;
+  }
+
+  var getRow=function(m){return mData.find(function(r){return r.month===m;})||null;};
+  var curr=currM?getRow(currM):null;
+  var prev=prevM?getRow(prevM):null;
+  var yoy=yoyM?getRow(yoyM):null;
+
+  var hasPrev=!!prev, hasYoy=!!yoy;
+
+  // note
+  var noteParts=[];
+  if(currM)noteParts.push("今月: "+currM);
+  if(hasPrev)noteParts.push("前月: "+prevM);
+  if(hasYoy)noteParts.push("昨年同月: "+yoyM);
+  document.getElementById("summaryNote").textContent=noteParts.length?"※ "+noteParts.join("　"):"";
+
+  // ── header ──
+  var cols=[{l:"項目",r:false},{l:"今月 ("+(currM||"—")+")",r:true}];
+  if(hasPrev)cols.push({l:"前月 ("+(prevM||"—")+")",r:true},{l:"前月比",r:true});
+  if(hasYoy)cols.push({l:"昨年同月 ("+(yoyM||"—")+")",r:true},{l:"昨年比",r:true});
+
+  var thead=document.getElementById("summaryThead");
+  thead.innerHTML=cols.map(function(c){
+    return'<th'+(c.r?' style="text-align:right"':'')+'>'+c.l+'</th>';
+  }).join("");
+
+  // ── helpers ──
+  var val=function(row,key){return row?row[key]:null;};
+  var pctVal=function(row){
+    if(!row)return null;
+    var t=row.named+row.general;
+    return t>0?(row.named/t)*100:0;
+  };
+  var diffCell=function(d){
+    if(!d)return'<span style="color:var(--tu)">—</span>';
+    var col=d.pos?"var(--green)":"var(--red)";
+    return'<span style="font-size:12px;font-weight:600;color:'+col+'">'+(d.pos?"▲":"▼")+" "+d.pct+"% ("+d.sign+fmt(Math.abs(d.value))+")</span>";
+  };
+  var diffCellPt=function(currV,prevV){
+    if(currV===null||prevV===null)return'<span style="color:var(--tu)">—</span>';
+    var d=currV-prevV;
+    var col=d>=0?"var(--green)":"var(--red)";
+    return'<span style="font-size:12px;font-weight:600;color:'+col+'">'+(d>=0?"▲":"▼")+" "+Math.abs(d).toFixed(1)+"pt</span>";
+  };
+  var numCell=function(v,color){
+    if(v===null)return'<td style="text-align:right;color:var(--tu)">—</td>';
+    return'<td style="text-align:right;font-weight:600'+(color?";color:"+color:"")+'" class="fb">'+fmt(v)+'</td>';
+  };
+
+  // ── rows ──
+  var rows=[
+    {
+      label:"指名アクセス数",color:"var(--nb)",
+      currV:val(curr,"named"),prevV:val(prev,"named"),yoyV:val(yoy,"named"),
+      diff:curr&&prev?calcDiff(curr.named,prev.named):null,
+      yDiff:curr&&yoy?calcDiff(curr.named,yoy.named):null,
+      isPct:false
+    },
+    {
+      label:"一般アクセス数",color:"var(--tm)",
+      currV:val(curr,"general"),prevV:val(prev,"general"),yoyV:val(yoy,"general"),
+      diff:curr&&prev?calcDiff(curr.general,prev.general):null,
+      yDiff:curr&&yoy?calcDiff(curr.general,yoy.general):null,
+      isPct:false
+    },
+    {
+      label:"合計アクセス数",color:"var(--txt)",
+      currV:curr?curr.named+curr.general:null,
+      prevV:prev?prev.named+prev.general:null,
+      yoyV:yoy?yoy.named+yoy.general:null,
+      diff:curr&&prev?calcDiff(curr.named+curr.general,prev.named+prev.general):null,
+      yDiff:curr&&yoy?calcDiff(curr.named+curr.general,yoy.named+yoy.general):null,
+      isPct:false
+    },
+    {
+      label:"指名率",color:"var(--blue)",
+      currV:pctVal(curr),prevV:pctVal(prev),yoyV:pctVal(yoy),
+      isPct:true
+    }
+  ];
+
+  var html="";
+  rows.forEach(function(row,ri){
+    html+='<tr style="border-bottom:1px solid var(--bdr);background:'+(ri%2===0?"var(--white)":"var(--bg)")+'">';
+    html+='<td class="fb" style="color:'+row.color+';white-space:nowrap">'+row.label+'</td>';
+    if(row.isPct){
+      html+='<td style="text-align:right">'+(row.currV!==null?'<span class="tag tag-pct">'+row.currV.toFixed(1)+'%</span>':"—")+'</td>';
+    }else{
+      html+=numCell(row.currV,row.color);
+    }
+    if(hasPrev){
+      if(row.isPct){
+        html+='<td style="text-align:right;color:var(--ts)">'+(row.prevV!==null?row.prevV.toFixed(1)+"%":"—")+'</td>';
+        html+='<td style="text-align:right">'+diffCellPt(row.currV,row.prevV)+'</td>';
+      }else{
+        html+='<td style="text-align:right;color:var(--tm)">'+(row.prevV!==null?fmt(row.prevV):"—")+'</td>';
+        html+='<td style="text-align:right">'+diffCell(row.diff)+'</td>';
+      }
+    }
+    if(hasYoy){
+      if(row.isPct){
+        html+='<td style="text-align:right;color:var(--ts)">'+(row.yoyV!==null?row.yoyV.toFixed(1)+"%":"—")+'</td>';
+        html+='<td style="text-align:right">'+diffCellPt(row.currV,row.yoyV)+'</td>';
+      }else{
+        html+='<td style="text-align:right;color:var(--tm)">'+(row.yoyV!==null?fmt(row.yoyV):"—")+'</td>';
+        html+='<td style="text-align:right">'+diffCell(row.yDiff)+'</td>';
+      }
+    }
+    html+='</tr>';
+  });
+  document.getElementById("summaryBody").innerHTML=html;
+}
+
+function renderKwTable(classified,selMonth,allMonths){
+  var kwList=getKwList();
+
+  // comp months (前月)
+  var comp=null;
+  if(allMonths.length>=2){
+    if(selMonth==="all")comp={curr:allMonths[allMonths.length-1],prev:allMonths[allMonths.length-2]};
+    else{var ci=allMonths.indexOf(selMonth);if(ci>=1)comp={curr:selMonth,prev:allMonths[ci-1]};}
+  }
+
+  // YoY month
+  var currM=selMonth==="all"?(allMonths.length?allMonths[allMonths.length-1]:null):selMonth;
+  var yoyM=currM?getYoyMonth(currM):null;
+  var hasYoy=yoyM&&allMonths.includes(yoyM);
+
+  // header info
+  var kwH=document.getElementById("kwHeader");
+  var parts=[];
+  if(comp)parts.push('<span style="font-weight:700;color:var(--blue)">今月: '+comp.curr+'</span><span style="margin:0 6px;color:var(--tu)">前月: '+comp.prev+'</span>');
+  if(hasYoy)parts.push('<span style="margin-left:8px;color:var(--ts)">昨年同月: '+yoyM+'</span>');
+  kwH.innerHTML=parts.join("")||'<span style="color:var(--tu)">'+(selMonth==="all"?"全期間":selMonth)+'</span>';
+
+  // legend
+  var kwLeg=document.getElementById("kwLegend");
+  if(comp||hasYoy){
+    kwLeg.style.display="flex";
+    var legParts=[];
+    if(comp)legParts.push('<span>📘 今月 = <strong style="color:var(--blue)">'+comp.curr+'</strong></span><span>📗 前月 = <strong>'+comp.prev+'</strong></span>');
+    if(hasYoy)legParts.push('<span>📅 昨年同月 = <strong>'+yoyM+'</strong></span>');
+    legParts.push('<span style="margin-left:auto;color:var(--tu)">▲ 増加 ／ ▼ 減少 ／ NEW = 今月初登場</span>');
+    kwLeg.innerHTML=legParts.join("");
+  }else{kwLeg.style.display="none";}
+
+  // build keyword maps
+  var currMon=comp?comp.curr:currM;
+  var prevMon=comp?comp.prev:null;
+  var cm={},pm={},ym={};
+  if(currMon)classified.filter(function(r){return r.month===currMon;}).forEach(function(r){cm[r.keyword]=(cm[r.keyword]||0)+r.access;});
+  if(prevMon)classified.filter(function(r){return r.month===prevMon;}).forEach(function(r){pm[r.keyword]=(pm[r.keyword]||0)+r.access;});
+  if(hasYoy)classified.filter(function(r){return r.month===yoyM;}).forEach(function(r){ym[r.keyword]=(ym[r.keyword]||0)+r.access;});
+
+  var allKws=[...new Set([...Object.keys(cm),...Object.keys(pm),...Object.keys(ym)])];
+  var kwTotal=allKws.reduce(function(s,k){return s+(cm[k]||0);},0);
+
+  var allRows=allKws.map(function(kw){
+    var cv=cm[kw]||0,pv=pm[kw]!==undefined?pm[kw]:null,yv=ym[kw]!==undefined?ym[kw]:null;
+    return{keyword:kw,type:isNamed(kw,kwList)?"指名":"一般",curr:cv,prev:pv,yoy:yv,
+      df:pv!==null?calcDiff(cv,pv):null,ydf:yv!==null?calcDiff(cv,yv):null,tot:kwTotal};
+  }).sort(function(a,b){return(b.curr-a.curr)||((b.prev||0)-(a.prev||0));}).slice(0,100);
+
+  // 1テーブルに統合（今月アクセス数降順）
+  var hdrCols=[
+    {l:"#",w:32},{l:"検索キーワード"},{l:"種別",w:60},
+    {l:"今月",w:70,r:true},{l:"前月",w:70,r:true},
+    {l:"前月比",w:80,r:true}
+  ];
+  if(hasYoy)hdrCols.push({l:"昨年比",w:80,r:true});
+  hdrCols.push({l:"シェア",w:120});
+
+  var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h+='<thead><tr style="background:var(--blue-xl)">';
+  hdrCols.forEach(function(col){
+    h+='<th style="padding:8px 10px;text-align:'+(col.r?"right":"left")+';font-size:11px;color:var(--ts);border-bottom:2px solid var(--bdr);white-space:nowrap'+(col.w?';width:'+col.w+'px':'')+'">'+(col.l)+'</th>';
+  });
+  h+='</tr></thead><tbody>';
+
+  if(!allRows.length){
+    h+='<tr><td colspan="'+hdrCols.length+'" style="padding:24px;text-align:center;color:var(--tu)">データなし</td></tr>';
+  }
+  allRows.forEach(function(row,i){
+    var isN=row.type==="指名";
+    var typeColor=isN?"#1a56db":"#0369a1";
+    var typeBg=isN?"#e8f0fe":"#e0f2fe";
+    var sw=row.tot>0?(row.curr/row.tot)*100:0;
+    var isNew=row.prev===null&&row.curr>0;
+    var isGone=row.curr===0&&row.prev!==null;
+    var rowBg=i%2===0?"var(--white)":"var(--bg)";
+    // 指名行は左ボーダーを青、一般は水色で色分け
+    h+='<tr style="border-bottom:1px solid var(--bdr);background:'+rowBg+';opacity:'+(isGone?.5:1)+';border-left:3px solid '+(isN?"#1a56db60":"#93c5fd80")+'">';
+    h+='<td style="padding:8px 10px;color:var(--tu);font-size:11px">'+(i+1)+'</td>';
+    // キーワード列
+    h+='<td style="padding:8px 10px"><div style="display:flex;align-items:center;gap:7px">';
+    h+='<div style="width:7px;height:7px;border-radius:50%;background:'+typeColor+';flex-shrink:0"></div>';
+    h+='<span style="font-weight:500;color:var(--txt)">'+row.keyword+'</span>';
+    h+='</div></td>';
+    // 種別バッジ
+    h+='<td style="padding:8px 10px;white-space:nowrap">';
+    h+='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:'+typeBg+';color:'+typeColor+'">'+row.type+'</span>';
+    h+='</td>';
+    h+='<td style="padding:8px 10px;text-align:right;font-weight:600;color:'+typeColor+'">'+(row.curr>0?fmt(row.curr):"—")+'</td>';
+    h+='<td style="padding:8px 10px;text-align:right;color:var(--tm)">'+(row.prev!==null?fmt(row.prev):"—")+'</td>';
+    // 前月比
+    h+='<td style="padding:8px 10px;text-align:right">';
+    if(isNew)h+='<span class="tag tag-new">NEW</span>';
+    else if(isGone)h+='<span class="tag tag-gone">消滅</span>';
+    else if(row.df)h+='<span style="font-size:11px;font-weight:600;color:'+(row.df.pos?"var(--green)":"var(--red)")+'">'+(row.df.pos?"▲":"▼")+" "+row.df.pct+"%</span>";
+    else h+='<span style="color:var(--tu)">—</span>';
+    h+='</td>';
+    // 昨年比
+    if(hasYoy){
+      h+='<td style="padding:8px 10px;text-align:right">';
+      if(row.ydf)h+='<span style="font-size:11px;font-weight:600;color:'+(row.ydf.pos?"var(--green)":"var(--red)")+'">'+(row.ydf.pos?"▲":"▼")+" "+row.ydf.pct+"%</span>";
+      else if(row.yoy===null&&row.curr>0)h+='<span class="tag tag-new" style="font-size:10px">NEW</span>';
+      else h+='<span style="color:var(--tu)">—</span>';
+      h+='</td>';
+    }
+    // share bar
+    h+='<td style="padding:8px 10px">';
+    h+='<div style="display:flex;align-items:center;gap:6px">';
+    h+='<div style="flex:1;height:5px;background:var(--bdr);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+Math.min(sw*4,100)+'%;background:'+typeColor+';border-radius:99px"></div></div>';
+    h+='<span style="font-size:10px;color:var(--ts);min-width:34px;text-align:right">'+pct(row.curr,row.tot)+'%</span>';
+    h+='</div></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+
+  var kwTable=document.getElementById("kwTable");
+  var kwThead=document.getElementById("kwThead");
+  kwThead.innerHTML="";
+
+  // 既存の split wrapper があれば削除して単一テーブルに差し替え
+  var oldWrap=document.getElementById("kwSplitWrap");
+  if(oldWrap)oldWrap.remove();
+
+  // kwBody を直接使用
+  var kwBody=document.getElementById("kwBody");
+  // kwBody は tbody なので親の table を使う
+  kwTable.style.display="none";
+  var singleWrap=document.getElementById("kwSingleWrap");
+  if(!singleWrap){
+    singleWrap=document.createElement("div");
+    singleWrap.id="kwSingleWrap";
+    kwTable.parentNode.insertBefore(singleWrap,kwTable);
+  }
+  singleWrap.innerHTML=h;
+}
+
+function renderAll(){
+  var kwList=getKwList();
+  var classified=classify(state.raw,kwList);
+  var allMonths=getMonths(classified);
+  var mData=byMonth(classified);
+
+  renderPeriodButtons(allMonths);
+  renderKPIs(classified,state.selMonth,allMonths);
+  renderRatioBars(mData);
+  renderChart(mData);
+  renderSummaryMonthBtns(allMonths);
+  renderSummaryTable(classified,allMonths);
+  if(state.activeTab==="keywords")renderKwTable(classified,state.selMonth,allMonths);
+
+  // status
+  var isEmpty=state.raw.length===0;
+  document.getElementById("statusDot").style.background=isEmpty?"var(--tu)":"var(--green)";
+  document.getElementById("statusText").style.color=isEmpty?"var(--tu)":"var(--green)";
+  document.getElementById("statusText").textContent=isEmpty?"CSVをアップロードしてください":fmt(state.raw.length)+"行 読み込み済み";
+
+  // kw count
+  document.getElementById("kwCount").textContent="カンマ区切り・部分一致で判定 ／ 現在 "+kwList.length+"語 設定中";
+}
+
+/* ── Event listeners ─────────────────────────────────────────────────────── */
+// Upload
+var zone=document.getElementById("uploadZone");
+var fileInput=document.getElementById("fileInput");
+
+zone.addEventListener("click",function(){fileInput.click();});
+zone.addEventListener("dragover",function(e){e.preventDefault();zone.classList.add("drag");});
+zone.addEventListener("dragleave",function(){zone.classList.remove("drag");});
+zone.addEventListener("drop",async function(e){
+  e.preventDefault();zone.classList.remove("drag");
+  await handleFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener("change",async function(){
+  if(fileInput.files.length)await handleFiles([...fileInput.files]);
+  fileInput.value="";
+});
+
+async function handleFiles(files){
+  document.getElementById("alertErr").style.display="none";
+  document.getElementById("alertOk").style.display="none";
+  var ar=[],af=[],am=[];
+  for(var f of files){
+    var res=await parseFile(f);
+    if(res){ar.push.apply(ar,res.rows);af.push(res.fmt);am.push.apply(am,res.months);}
+    else{
+      var el=document.getElementById("alertErr");
+      el.style.display="flex";
+      el.textContent="⚠ 「"+f.name+"」を解析できませんでした。列名をご確認ください。";
+    }
+  }
+  if(ar.length){
+    state.raw=ar;state.selMonth="all";
+    var months=[...new Set(am)].sort();
+    var el=document.getElementById("alertOk");
+    el.style.display="flex";
+    el.innerHTML="✓ 読み込み完了: <strong>"+fmt(ar.length)+"行</strong> ／ 月: <strong>"+months.join(", ")+"</strong> ／ "+[...new Set(af)].join(", ");
+    renderAll();
+  }
+}
+
+// KW input
+document.getElementById("kwInput").addEventListener("input",function(){
+  state.kwInput=this.value;
+  renderAll();
+});
+
+// Tabs
+document.querySelectorAll(".tab-btn").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    state.activeTab=btn.dataset.tab;
+    document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});
+    btn.classList.add("active");
+    if(btn.dataset.tab==="overview"){
+      document.getElementById("tabOverview").style.display="";
+      document.getElementById("tabKeywords").style.display="none";
+    }else{
+      document.getElementById("tabOverview").style.display="none";
+      document.getElementById("tabKeywords").style.display="";
+      var kwList=getKwList();
+      var classified=classify(state.raw,kwList);
+      var allMonths=getMonths(classified);
+      renderKwTable(classified,state.selMonth,allMonths);
+    }
+  });
+});
+
+// Resize: re-render chart
+var resizeTimer;
+window.addEventListener("resize",function(){
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(function(){
+    var mData=byMonth(classify(state.raw,getKwList()));
+    renderChart(mData);
+  },200);
+});
+
+/* ── Init ────────────────────────────────────────────────────────────────── */
+renderAll();
+</script>
+</body>
+</html>
